@@ -335,10 +335,11 @@ void print_directions(){
 void HandleInterruptA(){
 
   //heart of the step
-  (Bnew^Aold && B1new^A1old) ? encoderPos++ : encoderPos-- ; // XOR for normal and inverted channels and comparison 
+  // (Bnew^Aold && B1new^A1old) ? encoderPos++ : encoderPos-- ; // XOR for normal and inverted channels and comparison 
+  Bnew^Aold ? encoderPos++ : encoderPos-- ; // XOR for normal and inverted channels and comparison 
   
   Aold = fastDigitalRead(encoderPinA);
-  A1old = fastDigitalRead(encoderPinA1);
+  // A1old = fastDigitalRead(encoderPinA1);
 
 }
 
@@ -346,9 +347,10 @@ void HandleInterruptA(){
 void HandleInterruptB(){
 
   Bnew=fastDigitalRead(encoderPinB);
-  B1new=fastDigitalRead(encoderPinB1);
+  // B1new=fastDigitalRead(encoderPinB1);
 
   //heart of the step
-  (Bnew^Aold && B1new^A1old) ? encoderPos++:encoderPos--;// XOR for normal and inverted channels and comparison
+  // (Bnew^Aold && B1new^A1old) ? encoderPos++:encoderPos--;// XOR for normal and inverted channels and comparison
+  Bnew^Aold ? encoderPos++:encoderPos--;// XOR for normal and inverted channels and comparison
 
 }
