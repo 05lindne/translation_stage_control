@@ -45,17 +45,11 @@ int stepPin = 11;
 int dirPin = 10;  
 int sleepPin = 12;
 
-int ms1Pin = 9;
-int ms2Pin = 8;
-
 int step_num = 20;     //  number of steps for "small" movement
 
 // incoming serial data for controlling the motor state
 char state = '~';   
 char state_old = '~';
-
-// incoming serial data for controlling microstepping
-int microstepMode = 0;
 
 // set speed of the motor
 int speedRPM = 10; //desired speed in RPM
@@ -75,7 +69,7 @@ int end_backward = 6;
 #define encoderPinB 3
 #define encoderPinA1 0 // inverted channels
 #define encoderPinB1 1 // inverted channels
-#define encoderPinI 4
+
 
 int encoderInterruptA = 0;
 int encoderInterruptB = 1;
@@ -89,8 +83,6 @@ long Aold = 0;
 long Bnew = 0;
 long A1old = 0; // inverted channels
 long B1new = 0; // inverted channels
-
-// long Iold = 0;
 
 
 
@@ -117,8 +109,6 @@ void setup()
   pinMode(dirPin, OUTPUT);// y axis, dirPin
   pinMode(sleepPin, OUTPUT);
 
-  pinMode(ms1Pin, OUTPUT);// microstepping
-  pinMode(ms2Pin, OUTPUT);
 
 
   //set pin mode for all end button pins 
@@ -236,8 +226,6 @@ void loop()
         Serial.println("Motor stopping.");
         state_old = state;
     
-        digitalWrite(ms1Pin, setMs1Mode(1) );
-        digitalWrite(ms2Pin, setMs2Mode(1) );
       }
 
 
@@ -294,50 +282,7 @@ void loop()
 
       break;
 
-    case 'm': //microstepping
 
-      if( state != state_old ) { // if you got something new, say what you're doing    
-        
-        state_old = state;
-        
-        Serial.println("To switch to half-step mode, enter 2.");
-        Serial.println("To switch to quarter-step mode, enter 4.");
-        Serial.println("To switch to eighth-step mode, enter 8.");
-        
-        while(Serial.available() == 0) { }
-
-        if (Serial.available() > 0) { //check for incoming data
-          microstepMode = ( Serial.read() - '0' ); // read the incoming byte:
-          
-          // Serial.print("microstepMode: ");
-          // Serial.println(microstepMode, DEC);
-        }
-        
-        digitalWrite(sleepPin, HIGH); //wake up!
-        digitalWrite(dirPin, HIGH); //run forward
-
-        digitalWrite(ms1Pin, setMs1Mode(microstepMode));
-        digitalWrite(ms2Pin, setMs2Mode(microstepMode));
-
-
-        while(Serial.available() == 0) { 
-
-          digitalWrite(stepPin, LOW);
-          digitalWrite(stepPin, HIGH);
-          // delay(delay_time/microstepMode);
-          delay(1600/microstepMode);
-
-        }
-
-      }
-
-
-
-      
-
-
-
-      
 
     default:
       Serial.println("Wrong input.");
@@ -356,16 +301,11 @@ void loop()
     Serial.print("Encoder Revolution: ");
     Serial.print(revolution, DEC);
     Serial.print("\t Encoder Tick: ");
-    Serial.println(encoderTick, DEC);
+    Serial.print(encoderTick, DEC);
+    Serial.print("\t Encoder Position: ");
+    Serial.println(encoderPos, DEC);
     oldPos = encoderPos;
   }
-
-  // if (oldRev != encoderRev) {
-  //   Serial.print("Revolution: ");
-  //   Serial.println(encoderRev, DEC);
-  //   oldRev = encoderRev;
-  // }
-
 
 
 
@@ -383,60 +323,10 @@ void print_directions(){
   Serial.println("To stop motor, enter 's'.");
   Serial.println("To make a small movement forward, enter 'f'.");
   Serial.println("To make a small movement backward, enter 'b'.");
-  Serial.println("To do microstepping, enter 'm'.");
 
 }
 
-// microstep functions-------------------------------
 
-void microstepping(){
-
-
-
-}
-
-int setMs1Mode(int ms1StepMode){              // A function that returns a High or Low state number for MS1 pin
-  switch(ms1StepMode){                      // Switch statement for changing the MS1 pin state
-                                             // Different input states allowed are 1,2,4 or 8
-  case 1:
-    ms1StepMode = 0;
-    Serial.println("Step Mode is Full...");
-    break;
-  case 2:
-    ms1StepMode = 1;
-    Serial.println("Step Mode is Half...");
-    break;
-  case 4:
-    ms1StepMode = 0;
-    Serial.println("Step Mode is Quarter...");
-    break;
-  case 8:
-    ms1StepMode = 1;
-    Serial.println("Step Mode is Eighth...");
-    break;
-  }
-  return ms1StepMode;
-}
- 
-
-int setMs2Mode(int ms2StepMode){              // A function that returns a High or Low state number for MS2 pin
-  switch(ms2StepMode){                      // Switch statement for changing the MS2 pin state
-                                             // Different input states allowed are 1,2,4 or 8
-  case 1:
-    ms2StepMode = 0;
-    break;
-  case 2:
-    ms2StepMode = 0;
-    break;
-  case 4:
-    ms2StepMode = 1;
-    break;
-  case 8:
-    ms2StepMode = 1;
-    break;
-  }
-  return ms2StepMode;
-}
 
 
 // Encoder Functions--------------------------------------------------
@@ -449,10 +339,6 @@ void HandleInterruptA(){
   
   Aold = fastDigitalRead(encoderPinA);
   A1old = fastDigitalRead(encoderPinA1);
-  // Iold = fastDigitalRead(encoderPinI);
-  // if ( Iold && Aold ) encoderRev++ ;
-
-  // Serial.println( Iold );
 
 }
 
