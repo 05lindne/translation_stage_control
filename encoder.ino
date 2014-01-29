@@ -443,7 +443,7 @@ int setMs2Mode(int ms2StepMode){              // A function that returns a High 
 
 
 void HandleInterruptA(){
-  // noInterrupts();
+
   //heart of the step
   (Bnew^Aold && B1new^A1old) ? encoderPos++ : encoderPos-- ; // XOR for normal and inverted channels and comparison 
   
@@ -453,16 +453,16 @@ void HandleInterruptA(){
   // if ( Iold && Aold ) encoderRev++ ;
 
   // Serial.println( Iold );
-  // interrupts();
+
 }
 
 // Interrupt on B changing state
 void HandleInterruptB(){
-  // noInterrupts();
+
   Bnew=fastDigitalRead(encoderPinB);
   B1new=fastDigitalRead(encoderPinB1);
 
   //heart of the step
   (Bnew^Aold && B1new^A1old) ? encoderPos++:encoderPos--;// XOR for normal and inverted channels and comparison
-  // interrupts();
+
 }
