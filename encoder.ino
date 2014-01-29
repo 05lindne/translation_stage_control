@@ -67,8 +67,8 @@ int end_backward = 6;
 //Encoder specific variables-----------------------
 #define encoderPinA 2
 #define encoderPinB 3
-#define encoderPinA1 0 // inverted channels
-#define encoderPinB1 1 // inverted channels
+#define encoderPinA1 4 //0 // inverted channels
+#define encoderPinB1 5 //1 // inverted channels
 
 
 int encoderInterruptA = 0;
@@ -79,10 +79,15 @@ long oldPos = 0;
 volatile long encoderRev = 0;
 long oldRev = 0;
 
-long Aold = 0;
-long Bnew = 0;
-long A1old = 0; // inverted channels
-long B1new = 0; // inverted channels
+// long Aold = 0;
+// long Bnew = 0;
+// long A1old = 0; // inverted channels
+// long B1new = 0; // inverted channels
+
+long Bold = 0;
+long Anew = 0;
+long B1old = 0; // inverted channels
+long A1new = 0; // inverted channels
 
 
 
@@ -332,25 +337,51 @@ void print_directions(){
 // Encoder Functions--------------------------------------------------
 
 
+// void HandleInterruptA(){
+
+//   //heart of the step
+//   (Bnew^Aold && B1new^A1old) ? encoderPos++ : encoderPos-- ; // XOR for normal and inverted channels and comparison 
+//   // Bnew^Aold ? encoderPos++ : encoderPos-- ; // XOR and comparison 
+  
+//   Aold = fastDigitalRead(encoderPinA);
+//   A1old = fastDigitalRead(encoderPinA1);
+
+// }
+
+// // Interrupt on B changing state
+// void HandleInterruptB(){
+
+//   Bnew=fastDigitalRead(encoderPinB);
+//   B1new=fastDigitalRead(encoderPinB1);
+
+//   //heart of the step
+//   (Bnew^Aold && B1new^A1old) ? encoderPos++:encoderPos--;// XOR for normal and inverted channels and comparison
+//   // Bnew^Aold ? encoderPos++:encoderPos--;// XOR and comparison
+
+// }
+
+
 void HandleInterruptA(){
 
+  Anew=fastDigitalRead(encoderPinA);
+  A1new=fastDigitalRead(encoderPinA1);
+
   //heart of the step
-  // (Bnew^Aold && B1new^A1old) ? encoderPos++ : encoderPos-- ; // XOR for normal and inverted channels and comparison 
-  Bnew^Aold ? encoderPos++ : encoderPos-- ; // XOR for normal and inverted channels and comparison 
-  
-  Aold = fastDigitalRead(encoderPinA);
-  // A1old = fastDigitalRead(encoderPinA1);
+  (Anew^Bold && A1new^B1old) ? encoderPos++:encoderPos--;// XOR for normal and inverted channels and comparison
+  // Anew^Aold ? encoderPos++:encoderPos--;// XOR and comparison
 
 }
 
 // Interrupt on B changing state
 void HandleInterruptB(){
 
-  Bnew=fastDigitalRead(encoderPinB);
-  // B1new=fastDigitalRead(encoderPinB1);
 
   //heart of the step
-  // (Bnew^Aold && B1new^A1old) ? encoderPos++:encoderPos--;// XOR for normal and inverted channels and comparison
-  Bnew^Aold ? encoderPos++:encoderPos--;// XOR for normal and inverted channels and comparison
+  (Anew^Bold && A1new^B1old) ? encoderPos++ : encoderPos-- ; // XOR for normal and inverted channels and comparison 
+  // Anew^Bold ? encoderPos++ : encoderPos-- ; // XOR and comparison 
+  
+  Bold = fastDigitalRead(encoderPinA);
+  B1old = fastDigitalRead(encoderPinA1);
+
 
 }
