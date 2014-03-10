@@ -32,9 +32,9 @@ connect pin 3 to encoder phase B
 
 
  //libraries for high performance reads and writes e.g. fastDigitalRead( pin )
-#include "DigitalIO.h"
-#include "DigitalPin.h"
-#include "SoftSPI.h"
+// #include "DigitalIO.h"
+// #include "DigitalPin.h"
+// #include "SoftSPI.h"
 
 
 
@@ -67,8 +67,8 @@ int end_backward = 6;
 //Encoder specific variables-----------------------
 #define encoderPinA 2
 #define encoderPinB 3
-#define encoderPinA1 4 //0 // inverted channels
-#define encoderPinB1 5 //1 // inverted channels
+#define encoderPinA1 0 // inverted channels
+#define encoderPinB1 1 // inverted channels
 
 
 int encoderInterruptA = 0;
@@ -79,15 +79,10 @@ long oldPos = 0;
 volatile long encoderRev = 0;
 long oldRev = 0;
 
-// long Aold = 0;
-// long Bnew = 0;
-// long A1old = 0; // inverted channels
-// long B1new = 0; // inverted channels
-
-long Bold = 0;
-long Anew = 0;
-long B1old = 0; // inverted channels
-long A1new = 0; // inverted channels
+volatile long Aold = 0;
+volatile long Bnew = 0;
+volatile long A1old = 0; // inverted channels
+volatile long B1new = 0; // inverted channels
 
 
 
@@ -131,7 +126,7 @@ void setup()
   attachInterrupt(encoderInterruptB, HandleInterruptB, CHANGE);
 
   delay_time = 60L * 1000L / stepsPerRevolution / speedRPM; // calculate delay time to match desired speed in RPM
-
+                                                            // seconds*milliseconds/ (stepsPerRevolution * speedRPM )
   print_directions();
 
 }
@@ -188,7 +183,7 @@ void loop()
         digitalWrite(stepPin, HIGH); //step!  
         delayMicroseconds(10);               
         digitalWrite(stepPin, LOW);  
-        delay(delay_time);
+        delayMicroseconds(1000);
     
       }
 
@@ -218,7 +213,7 @@ void loop()
       digitalWrite(stepPin, HIGH); //step!  
       delayMicroseconds(10);               
       digitalWrite(stepPin, LOW);  
-      delay(delay_time);
+      delayMicroseconds(delay_time);
     
       }
 
@@ -255,7 +250,7 @@ void loop()
         digitalWrite(stepPin, HIGH); //step!  
         delayMicroseconds(100);               
         digitalWrite(stepPin, LOW);  
-        delay(delay_time);
+        delayMicroseconds(delay_time);
       } 
 
       state = 's'; // stop after small movement
@@ -280,7 +275,7 @@ void loop()
         digitalWrite(stepPin, HIGH); //step!  
         delayMicroseconds(10);               
         digitalWrite(stepPin, LOW);  
-        delay(delay_time);
+        delayMicroseconds(delay_time);
       } ;
 
       state = 's'; // stop after one step
@@ -303,8 +298,8 @@ void loop()
     int revolution = encoderPos/4000;
     int encoderTick = encoderPos%4000;
 
-    Serial.print("Encoder Revolution: ");
-    Serial.print(revolution, DEC);
+    Serial.print("Encoder Revolution: "); 
+    Serial.print(revolution, DEC); 
     Serial.print("\t Encoder Tick: ");
     Serial.print(encoderTick, DEC);
     Serial.print("\t Encoder Position: ");
@@ -337,51 +332,49 @@ void print_directions(){
 // Encoder Functions--------------------------------------------------
 
 
-// void HandleInterruptA(){
-
-//   //heart of the step
-//   (Bnew^Aold && B1new^A1old) ? encoderPos++ : encoderPos-- ; // XOR for normal and inverted channels and comparison 
-//   // Bnew^Aold ? encoderPos++ : encoderPos-- ; // XOR and comparison 
-  
-//   Aold = fastDigitalRead(encoderPinA);
-//   A1old = fastDigitalRead(encoderPinA1);
-
-// }
-
-// // Interrupt on B changing state
-// void HandleInterruptB(){
-
-//   Bnew=fastDigitalRead(encoderPinB);
-//   B1new=fastDigitalRead(encoderPinB1);
-
-//   //heart of the step
-//   (Bnew^Aold && B1new^A1old) ? encoderPos++:encoderPos--;// XOR for normal and inverted channels and comparison
-//   // Bnew^Aold ? encoderPos++:encoderPos--;// XOR and comparison
-
-// }
-
-
 void HandleInterruptA(){
 
-  Anew=fastDigitalRead(encoderPinA);
-  A1new=fastDigitalRead(encoderPinA1);
-
   //heart of the step
-  (Anew^Bold && A1new^B1old) ? encoderPos++:encoderPos--;// XOR for normal and inverted channels and comparison
-  // Anew^Aold ? encoderPos++:encoderPos--;// XOR and comparison
+  // (Bnew^Aold && B1new^A1old) ? encoderPos++ : encoderPos-- ; // XOR for normal and inverted channels and comparison 
+  // Bnew^Aold ? encoderPos++ : encoderPos-- ; // XOR for normal and inverted channels and comparison 
+  
+  if ( Bnew^Aold ) {
+
+    if ( B1new^A1old ) 
+      encoderPos++;
+
+  } else if( !Bnew^Aold ) {
+
+    if( !B1new^A1old ) 
+      encoderPos--;
+  }
+
+
+
+  Aold = fastDigitalRead(encoderPinA);
+  A1old = fastDigitalRead(encoderPinA1);
 
 }
 
 // Interrupt on B changing state
 void HandleInterruptB(){
 
+  Bnew=fastDigitalRead(encoderPinB);
+  B1new=fastDigitalRead(encoderPinB1);
 
   //heart of the step
-  (Anew^Bold && A1new^B1old) ? encoderPos++ : encoderPos-- ; // XOR for normal and inverted channels and comparison 
-  // Anew^Bold ? encoderPos++ : encoderPos-- ; // XOR and comparison 
-  
-  Bold = fastDigitalRead(encoderPinA);
-  B1old = fastDigitalRead(encoderPinA1);
+  // (Bnew^Aold && B1new^A1old) ? encoderPos++ : encoderPos--;// XOR for normal and inverted channels and comparison
+  // Bnew^Aold ? encoderPos++ : encoderPos--;// XOR for normal and inverted channels and comparison
 
+    if ( Bnew^Aold ) {
+
+    if ( B1new^A1old ) 
+      encoderPos++;
+
+  } else if( !Bnew^Aold ) {
+
+    if( !B1new^A1old ) 
+      encoderPos--;
+  }
 
 }
