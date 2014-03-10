@@ -81,8 +81,8 @@ long oldRev = 0;
 
 volatile long Aold = 0;
 volatile long Bnew = 0;
-volatile long A1old = 0; // inverted channels
-volatile long B1new = 0; // inverted channels
+volatile long A1old = 1; // inverted channels
+volatile long B1new = 1; // inverted channels
 
 
 
@@ -125,8 +125,10 @@ void setup()
   attachInterrupt(encoderInterruptA, HandleInterruptA, CHANGE);
   attachInterrupt(encoderInterruptB, HandleInterruptB, CHANGE);
 
-  delay_time = 60L * 1000L / stepsPerRevolution / speedRPM; // calculate delay time to match desired speed in RPM
+  // delay_time = 60L * 1000L / stepsPerRevolution / speedRPM; // calculate delay time to match desired speed in RPM
                                                             // seconds*milliseconds/ (stepsPerRevolution * speedRPM )
+  delay_time = 1000;
+
   print_directions();
 
 }
@@ -183,7 +185,8 @@ void loop()
         digitalWrite(stepPin, HIGH); //step!  
         delayMicroseconds(10);               
         digitalWrite(stepPin, LOW);  
-        delayMicroseconds(1000);
+        // delayMicroseconds(1000);
+        delayMicroseconds(delay_time);
     
       }
 
@@ -214,6 +217,7 @@ void loop()
       delayMicroseconds(10);               
       digitalWrite(stepPin, LOW);  
       delayMicroseconds(delay_time);
+      // delayMicroseconds(1000);
     
       }
 
