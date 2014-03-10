@@ -51,6 +51,9 @@ int step_num = 20;     //  number of steps for "small" movement
 char state = '~';   
 char state_old = '~';
 
+int microstep = 0;   
+int microstep_old = 0;   
+
 // set speed of the motor
 int speedRPM = 10; //desired speed in RPM
 int stepsPerRevolution = 4000;
@@ -67,22 +70,34 @@ int end_backward = 6;
 //Encoder specific variables-----------------------
 #define encoderPinA 2
 #define encoderPinB 3
-#define encoderPinA1 0 // inverted channels
-#define encoderPinB1 1 // inverted channels
+#define encoderPinA1 4 //0 // inverted channels
+#define encoderPinB1 5 //1 // inverted channels
 
+#define MS1 9
+#define MS2 8
 
-int encoderInterruptA = 0;
-int encoderInterruptB = 1;
+// int encoderInterruptA = 0;
+// int encoderInterruptB = 1;
+int encoderInterruptA = 1;
+int encoderInterruptB = 0;
 
 volatile long encoderPos = 0;
-long oldPos = 0;
+volatile long oldPos = 0;
 volatile long encoderRev = 0;
-long oldRev = 0;
+volatile long oldRev = 0;
 
 volatile long Aold = 0;
 volatile long Bnew = 0;
 volatile long A1old = 1; // inverted channels
 volatile long B1new = 1; // inverted channels
+
+volatile long ASet = 0;
+volatile long BSet = 0;
+volatile long APrev = 0;
+volatile long BPrev = 0;
+volatile long A1Set = 1; // inverted channels
+volatile long B1Set = 1; // inverted channels
+
 
 
 
@@ -125,9 +140,12 @@ void setup()
   attachInterrupt(encoderInterruptA, HandleInterruptA, CHANGE);
   attachInterrupt(encoderInterruptB, HandleInterruptB, CHANGE);
 
+
+  pinMode(MS1, OUTPUT);   // set pin 13 to output
+  pinMode(MS2, OUTPUT);   // set pin 9 to output
   // delay_time = 60L * 1000L / stepsPerRevolution / speedRPM; // calculate delay time to match desired speed in RPM
                                                             // seconds*milliseconds/ (stepsPerRevolution * speedRPM )
-  delay_time = 1000;
+  delay_time = 100000;
 
   print_directions();
 
@@ -141,7 +159,7 @@ void setup()
 void loop() 
 { 
 
-
+  delay(1000);
   // send data only when you receive data:
   if (Serial.available() > 0) { //check for incoming data
     
@@ -182,6 +200,11 @@ void loop()
 
         digitalWrite(dirPin, HIGH); //run forward
 
+        if( ( microstep != 0 ) && ( microstep != microstep_old ) ) {
+          digitalWrite(MS1, MS1_MODE(microstep));
+          digitalWrite(MS2, MS2_MODE(microstep));
+        }
+
         digitalWrite(stepPin, HIGH); //step!  
         delayMicroseconds(10);               
         digitalWrite(stepPin, LOW);  
@@ -213,6 +236,11 @@ void loop()
 
       digitalWrite(dirPin, LOW); // run backward
 
+      if( ( microstep != 0 ) && ( microstep != microstep_old ) ) {
+        digitalWrite(MS1, MS1_MODE(microstep));
+        digitalWrite(MS2, MS2_MODE(microstep));
+      }
+
       digitalWrite(stepPin, HIGH); //step!  
       delayMicroseconds(10);               
       digitalWrite(stepPin, LOW);  
@@ -241,6 +269,7 @@ void loop()
       if( state != state_old ) { // if you got something new, say what you're doing
 
         Serial.println("Motor making a small movement forward.");
+
 
       }
 
@@ -287,6 +316,49 @@ void loop()
       break;
 
 
+
+
+    case '2': 
+
+      if( state != state_old ) { // if you got something new, say what you're doing
+
+        Serial.println("Step Mode is Half.");
+        state_old = state;
+
+      }
+
+      microstep =2;
+
+
+      break;
+
+    case '4': 
+
+      if( state != state_old ) { // if you got something new, say what you're doing
+
+        Serial.println("Step Mode is Quarter.");
+        state_old = state;
+
+      }
+
+      microstep =4;
+
+
+      break;
+
+    case '8': 
+
+      if( state != state_old ) { // if you got something new, say what you're doing
+
+        Serial.println("Step Mode is Eigth.");
+        state_old = state;
+
+      }
+
+      microstep =8;
+
+
+      break;
 
     default:
       Serial.println("Wrong input.");
@@ -342,16 +414,27 @@ void HandleInterruptA(){
   // (Bnew^Aold && B1new^A1old) ? encoderPos++ : encoderPos-- ; // XOR for normal and inverted channels and comparison 
   // Bnew^Aold ? encoderPos++ : encoderPos-- ; // XOR for normal and inverted channels and comparison 
   
-  if ( Bnew^Aold ) {
+  // if (  ( Bnew != B1new ) && ( Aold != A1old ) ) {
+    
+    if ( Bnew^Aold ) {
 
-    if ( B1new^A1old ) 
-      encoderPos++;
+      if ( B1new^A1old ) 
+        encoderPos++;
 
-  } else if( !Bnew^Aold ) {
+    } else if( !(Bnew^Aold) ) {
 
-    if( !B1new^A1old ) 
-      encoderPos--;
-  }
+      if( !(B1new^A1old) ) 
+        encoderPos--;
+    } 
+    
+  // }
+
+
+  // if (  ( Bnew != B1new ) && ( Aold != A1old ) ) {
+    
+  //   Bnew^Aold ? encoderPos++ : encoderPos-- ;
+    
+  // }
 
 
 
@@ -369,16 +452,120 @@ void HandleInterruptB(){
   //heart of the step
   // (Bnew^Aold && B1new^A1old) ? encoderPos++ : encoderPos--;// XOR for normal and inverted channels and comparison
   // Bnew^Aold ? encoderPos++ : encoderPos--;// XOR for normal and inverted channels and comparison
-
+  
+  // if (  ( Bnew != B1new ) && ( Aold != A1old ) ) {
+    
     if ( Bnew^Aold ) {
 
-    if ( B1new^A1old ) 
-      encoderPos++;
+      if ( B1new^A1old ) 
+        encoderPos++;
 
-  } else if( !Bnew^Aold ) {
+    } else if( !(Bnew^Aold) ) {
 
-    if( !B1new^A1old ) 
-      encoderPos--;
-  }
+      if( !(B1new^A1old) ) 
+        encoderPos--;
+    } 
+
+  // }
+
+  // if (  ( Bnew != B1new ) && ( Aold != A1old ) ) {
+    
+  //   Bnew^Aold ? encoderPos++ : encoderPos-- ;
+    
+  // }
+
+  
+
 
 }
+
+
+
+
+// // Interrupt service routines for the left motor's quadrature encoder
+// void HandleInterruptA(){
+//   BSet = fastDigitalRead(encoderPinB);
+//   ASet = fastDigitalRead(encoderPinA);
+//   B1Set = fastDigitalRead(encoderPinB1);
+//   A1Set = fastDigitalRead(encoderPinA1);
+  
+//   if ( (BSet == B1Set) || (ASet == A1Set) ) return;
+
+//   encoderPos+=ParseEncoder();
+  
+//   APrev = ASet;
+//   BPrev = BSet;
+// }
+
+// // Interrupt service routines for the right motor's quadrature encoder
+// void HandleInterruptB(){
+//   // Test transition;
+//   BSet = fastDigitalRead(encoderPinB);
+//   ASet = fastDigitalRead(encoderPinA);
+//   B1Set = fastDigitalRead(encoderPinB1);
+//   A1Set = fastDigitalRead(encoderPinA1);
+
+//   if ( (BSet == B1Set) || (ASet == A1Set) ) return;
+
+//   encoderPos+=ParseEncoder();
+  
+//   APrev = ASet;
+//   BPrev = BSet;
+// }
+
+// int ParseEncoder(){
+//   if(APrev && BPrev){
+//     if(!ASet && BSet) return 1;
+//     if(ASet && !BSet) return -1;
+//   }else if(!APrev && BPrev){
+//     if(!ASet && !BSet) return 1;
+//     if(ASet && BSet) return -1;
+//   }else if(!APrev && !BPrev){
+//     if(ASet && !BSet) return 1;
+//     if(!ASet && BSet) return -1;
+//   }else if(APrev && !BPrev){
+//     if(ASet && BSet) return 1;
+//     if(!ASet && !BSet) return -1;
+//   }
+// }
+
+int MS1_MODE(int MS1_StepMode){              // A function that returns a High or Low state number for MS1 pin
+   switch(MS1_StepMode){                      // Switch statement for changing the MS1 pin state
+                                              // Different input states allowed are 1,2,4 or 8 
+                                              //http://danthompsonsblog.blogspot.de/2010_05_01_archive.html
+   case 1:
+     MS1_StepMode = 0;
+     break;
+   case 2:
+     MS1_StepMode = 1;
+     break;
+   case 4:
+     MS1_StepMode = 0;
+     break;
+   case 8:
+     MS1_StepMode = 1;
+     break;
+   }
+   return MS1_StepMode;
+ }
+  
+  
+  
+ int MS2_MODE(int MS2_StepMode){              // A function that returns a High or Low state number for MS2 pin
+   switch(MS2_StepMode){                      // Switch statement for changing the MS2 pin state
+                                              // Different input states allowed are 1,2,4 or 8
+   case 1:
+     MS2_StepMode = 0;
+     break;
+   case 2:
+     MS2_StepMode = 0;
+     break;
+   case 4:
+     MS2_StepMode = 1;
+     break;
+   case 8:
+     MS2_StepMode = 1;
+     break;
+   }
+   return MS2_StepMode;
+ }
